@@ -79,9 +79,6 @@ async function seed() {
 
     const { rows } = await client.query("SELECT COUNT(*) FROM products");
 
-    console.log(` Row count in database: ${rows[0].count}`);
-
-    console.log(" Running ANALYZE...");
     await client.query("ANALYZE products");
 
     console.log(" Seeding completed successfully!");

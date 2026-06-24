@@ -12,6 +12,10 @@
  */
 
 import pool from "../src/db/pool.js";
+import dotenv from "dotenv";
+
+dotenv.config();
+console.log("DATABASE_URL =", process.env.DATABASE_URL);
 
 const CATEGORIES = [
   "Electronics",
