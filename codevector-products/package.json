@@ -1,0 +1,20 @@
+{
+  "name": "codevector-products",
+  "version": "1.0.0",
+  "description": "Browse 200k products with fast, stable pagination",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "nodemon src/server.js",
+    "seed": "node seed/seed.js",
+    "simulate-writes": "node seed/simulate_writes.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.2",
+    "nodemon": "^3.1.14",
+    "path": "^0.12.7",
+    "pg": "^8.12.0"
+  }
+}

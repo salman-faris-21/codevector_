@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Product Browser</title>
+<style>
+  body { font-family: -apple-system, Arial, sans-serif; max-width: 900px; margin: 30px auto; background: #f7f7f8; color: #222; }
+  h1 { font-size: 22px; }
+  .controls { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; }
+  select, button { padding: 8px 12px; font-size: 14px; border-radius: 6px; border: 1px solid #ccc; }
+  button { background: #222; color: #fff; cursor: pointer; border: none; }
+  button:disabled { background: #999; cursor: not-allowed; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+  th { background: #efefef; }
+  .meta { color: #666; font-size: 13px; margin: 10px 0; }
+  .pager { display: flex; gap: 10px; margin-top: 14px; }
+</style>
+</head>
+<body>
+  <h1>Product Browser (200k products, newest first)</h1>
+  <div class="controls">
+    <select id="category"><option value="">All categories</option></select>
+    <select id="limit">
+      <option value="20">20 / page</option>
+      <option value="50">50 / page</option>
+      <option value="100">100 / page</option>
+    </select>
+    <button id="reload">Reload from page 1</button>
+  </div>
+  <div class="meta" id="meta"></div>
+  <table>
+    <thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Created</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="pager">
+    <button id="prev" disabled>&larr; Prev</button>
+    <button id="next" disabled>Next &rarr;</button>
+  </div>
+
+<script>
+let cursorStack = []; // history of cursors so Prev works
+let currentCursor = null;
+let nextCursor = null;
+
+const rowsEl = document.getElementById('rows');
+const metaEl = document.getElementById('meta');
+const categoryEl = document.getElementById('category');
+const limitEl = document.getElementById('limit');
+const prevBtn = document.getElementById('prev');
+const nextBtn = document.getElementById('next');
+
+async function loadCategories() {
+  const res = await fetch('/api/products/categories');
+  const data = await res.json();
+  for (const c of data.categories) {
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    categoryEl.appendChild(opt);
+  }
+}
+
+async function loadPage(cursor) {
+  const params = new URLSearchParams();
+  if (categoryEl.value) params.set('category', categoryEl.value);
+  params.set('limit', limitEl.value);
+  if (cursor) params.set('cursor', cursor);
+
+  const res = await fetch('/api/products?' + params.toString());
+  const data = await res.json();
+
+  rowsEl.innerHTML = '';
+  for (const p of data.data) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${p.id}</td><td>${p.name}</td><td>${p.category}</td><td>$${p.price}</td><td>${new Date(p.created_at).toLocaleString()}</td>`;
+    rowsEl.appendChild(tr);
+  }
+
+  metaEl.textContent = `Showing ${data.pageInfo.count} products` + (data.pageInfo.hasMore ? ' (more available)' : ' (end of list)');
+  nextCursor = data.pageInfo.nextCursor;
+  nextBtn.disabled = !data.pageInfo.hasMore;
+  prevBtn.disabled = cursorStack.length === 0;
+}
+
+document.getElementById('reload').addEventListener('click', () => {
+  cursorStack = [];
+  currentCursor = null;
+  loadPage(null);
+});
+
+nextBtn.addEventListener('click', () => {
+  cursorStack.push(currentCursor);
+  currentCursor = nextCursor;
+  loadPage(currentCursor);
+});
+
+prevBtn.addEventListener('click', () => {
+  currentCursor = cursorStack.pop();
+  loadPage(currentCursor);
+});
+
+categoryEl.addEventListener('change', () => { cursorStack = []; currentCursor = null; loadPage(null); });
+limitEl.addEventListener('change', () => { cursorStack = []; currentCursor = null; loadPage(null); });
+
+loadCategories();
+loadPage(null);
+</script>
+</body>
+</html>
